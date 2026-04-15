@@ -2,7 +2,7 @@ extends Area2D
 
 const SPEED: float = 200.0
 const MAX_DISTANCE: float = 320.0
-const DAMAGE: int = 4
+const DAMAGE: int = 6
 
 var direction: Vector2 = Vector2.RIGHT
 var source: Node = null

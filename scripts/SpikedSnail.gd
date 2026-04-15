@@ -3,7 +3,7 @@ extends CharacterBody2D
 signal died
 
 const SPEED: float = 13.3
-const CONTACT_DAMAGE: int = 3
+const CONTACT_DAMAGE: int = 6
 const DAMAGE_COOLDOWN: float = 1.0
 const XP_REWARD: int = 25
 
@@ -21,6 +21,7 @@ var _damage_timer: float = 0.0
 var _stun_timer: float = 0.0
 var _shell_timer: float = SHELL_INTERVAL
 var _in_shell: bool = false
+var _first_hit: bool = true
 var _shell_duration_timer: float = 0.0
 var _spike_fire_timer: float = 0.0
 var _player: CharacterBody2D = null
@@ -28,6 +29,7 @@ var _player: CharacterBody2D = null
 @onready var body: Polygon2D = $Body
 
 var _spike_scene: PackedScene = preload("res://scenes/Spike.tscn")
+var _dmg_num_scene: PackedScene = preload("res://scenes/DamageNumber.tscn")
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -96,10 +98,21 @@ func _shoot_spikes() -> void:
 func take_damage(amount: float, _counted: bool = true) -> void:
 	if _in_shell:
 		return
+	if _first_hit:
+		_first_hit = false
+		_enter_shell()
+		return
 	hp -= amount
 	_stun_timer = 0.25
+	_spawn_damage_number(amount)
 	if hp <= 0.0:
 		if _player != null:
 			_player.add_experience(XP_REWARD)
 		died.emit()
 		queue_free()
+
+func _spawn_damage_number(amount: float) -> void:
+	var n := _dmg_num_scene.instantiate()
+	n.global_position = global_position + Vector2(randf_range(-10, 10), -25)
+	get_tree().current_scene.add_child(n)
+	n.setup(roundi(amount), Color(1.0, 0.85, 0.2))
