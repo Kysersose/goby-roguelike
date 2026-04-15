@@ -1,5 +1,7 @@
 extends CharacterBody2D
 
+signal died(counted: bool)
+
 const SPEED: float = 20.0
 const DAMAGE: int = 2
 const DAMAGE_COOLDOWN: float = 1.0
@@ -12,6 +14,7 @@ var _player: CharacterBody2D = null
 
 func _ready() -> void:
 	add_to_group("enemies")
+	add_to_group("normal_enemies")
 	_player = get_tree().get_first_node_in_group("player")
 
 func _physics_process(delta: float) -> void:
@@ -37,10 +40,11 @@ func _physics_process(delta: float) -> void:
 				_damage_timer = DAMAGE_COOLDOWN
 				break
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, counted: bool = true) -> void:
 	hp -= amount
 	_stun_timer = 0.25
 	if hp <= 0.0:
-		if _player != null:
+		if _player != null and counted:
 			_player.add_experience(10)
+		died.emit(counted)
 		queue_free()

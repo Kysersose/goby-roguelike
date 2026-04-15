@@ -1,0 +1,105 @@
+extends CharacterBody2D
+
+signal died
+
+const SPEED: float = 13.3
+const CONTACT_DAMAGE: int = 3
+const DAMAGE_COOLDOWN: float = 1.0
+const XP_REWARD: int = 25
+
+const SHELL_INTERVAL: float = 8.0
+const SHELL_DURATION: float = 3.0
+const SPIKE_FIRE_INTERVAL: float = 1.5
+const SPIKE_COUNT: int = 8
+
+const COLOR_NORMAL: Color = Color(0.5, 0.38, 0.28)
+const COLOR_IMMUNE: Color = Color(0.72, 0.2, 0.9)
+
+var max_hp: float = 12.5
+var hp: float = 12.5
+var _damage_timer: float = 0.0
+var _stun_timer: float = 0.0
+var _shell_timer: float = SHELL_INTERVAL
+var _in_shell: bool = false
+var _shell_duration_timer: float = 0.0
+var _spike_fire_timer: float = 0.0
+var _player: CharacterBody2D = null
+
+@onready var body: Polygon2D = $Body
+
+var _spike_scene: PackedScene = preload("res://scenes/Spike.tscn")
+
+func _ready() -> void:
+	add_to_group("enemies")
+	add_to_group("elite_enemies")
+	_player = get_tree().get_first_node_in_group("player")
+	body.color = COLOR_NORMAL
+
+func _physics_process(delta: float) -> void:
+	if _player == null:
+		return
+
+	if _stun_timer > 0.0:
+		_stun_timer -= delta
+		velocity = Vector2.ZERO
+		move_and_slide()
+		return
+
+	if _in_shell:
+		_shell_duration_timer -= delta
+		_spike_fire_timer -= delta
+		if _spike_fire_timer <= 0.0:
+			_shoot_spikes()
+			_spike_fire_timer = SPIKE_FIRE_INTERVAL
+		if _shell_duration_timer <= 0.0:
+			_exit_shell()
+		velocity = Vector2.ZERO
+	else:
+		_shell_timer -= delta
+		if _shell_timer <= 0.0:
+			_enter_shell()
+		var dir := (_player.global_position - global_position).normalized()
+		velocity = dir * SPEED
+
+	move_and_slide()
+
+	_damage_timer -= delta
+	if _damage_timer <= 0.0:
+		for i in get_slide_collision_count():
+			var col := get_slide_collision(i)
+			if col.get_collider() == _player:
+				_player.take_damage(CONTACT_DAMAGE)
+				_damage_timer = DAMAGE_COOLDOWN
+				break
+
+func _enter_shell() -> void:
+	_in_shell = true
+	_shell_duration_timer = SHELL_DURATION
+	_spike_fire_timer = 0.0
+	body.color = COLOR_IMMUNE
+
+func _exit_shell() -> void:
+	_in_shell = false
+	_shell_timer = SHELL_INTERVAL
+	body.color = COLOR_NORMAL
+
+func _shoot_spikes() -> void:
+	for i in SPIKE_COUNT:
+		var angle := (TAU / SPIKE_COUNT) * i
+		var dir := Vector2(cos(angle), sin(angle))
+		var spike = _spike_scene.instantiate()
+		spike.global_position = global_position
+		spike.direction = dir
+		spike.source = self
+		get_tree().current_scene.add_child(spike)
+
+func take_damage(amount: float, _counted: bool = true) -> void:
+	if _in_shell:
+		return
+	hp -= amount
+	_stun_timer = 0.25
+	if hp <= 0.0:
+		if _player != null:
+			_player.add_experience(XP_REWARD)
+		died.emit()
+		queue_free()

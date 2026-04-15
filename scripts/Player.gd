@@ -1,20 +1,26 @@
 extends CharacterBody2D
 
 signal health_changed(current: int, maximum: int)
+signal mana_changed(current: int, maximum: int)
 signal experience_changed(current: int, needed: int)
 signal level_changed(level: int)
 signal died
 
-const SPEED: float = 150.0
 const TARGET_SIZE: float = 128.0
-const TAIL_WHIP_DAMAGE: float = 2.5
 const TAIL_WHIP_RANGE: float = 100.0
 const TAIL_WHIP_COOLDOWN: float = 0.5
+
+var speed: float = 150.0
+var tail_whip_damage: float = 2.5
+var intelligence: int = 0
+var defense: int = 0
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
 var max_hp: int = 20
 var hp: int = 20
+var max_mp: int = 10
+var mp: int = 10
 var xp: int = 0
 var level: int = 1
 var _last_anim: String = "swim_down"
@@ -33,11 +39,13 @@ func _ready() -> void:
 	sprite.play(_last_anim)
 	sprite.pause()
 	health_changed.emit(hp, max_hp)
+	mana_changed.emit(mp, max_mp)
 	experience_changed.emit(xp, _xp_for_level(level))
 	sprite.animation_finished.connect(_on_animation_finished)
 
 func take_damage(amount: int) -> void:
-	hp = maxi(hp - amount, 0)
+	var actual := maxi(amount - defense, 0)
+	hp = maxi(hp - actual, 0)
 	health_changed.emit(hp, max_hp)
 	if hp <= 0:
 		died.emit()
@@ -55,9 +63,35 @@ func add_experience(amount: int) -> void:
 		needed = _xp_for_level(level)
 	experience_changed.emit(xp, needed)
 
+func apply_upgrade(stat: String, amount: float) -> void:
+	match stat:
+		"tail_whip_damage":
+			tail_whip_damage += amount
+		"max_hp":
+			max_hp += int(amount)
+			hp = mini(hp + int(amount), max_hp)
+			health_changed.emit(hp, max_hp)
+		"intelligence":
+			intelligence += int(amount)
+		"defense":
+			defense += int(amount)
+		"speed":
+			speed += amount
+
 func heal(amount: int) -> void:
 	hp = mini(hp + amount, max_hp)
 	health_changed.emit(hp, max_hp)
+
+func use_mana(amount: int) -> bool:
+	if mp < amount:
+		return false
+	mp -= amount
+	mana_changed.emit(mp, max_mp)
+	return true
+
+func restore_mana(amount: int) -> void:
+	mp = mini(mp + amount, max_mp)
+	mana_changed.emit(mp, max_mp)
 
 func _on_animation_finished() -> void:
 	if sprite.animation == "tail_whip":
@@ -72,7 +106,7 @@ func _physics_process(delta: float) -> void:
 	if not _attacking:
 		if holding and to_mouse.length() > 1.0:
 			var dir := to_mouse.normalized()
-			velocity = dir * SPEED
+			velocity = dir * speed
 
 			var anim: String
 			if absf(dir.x) > absf(dir.y):
@@ -101,4 +135,4 @@ func _tail_whip() -> void:
 	sprite.play("tail_whip")
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if global_position.distance_to(enemy.global_position) <= TAIL_WHIP_RANGE:
-			enemy.take_damage(TAIL_WHIP_DAMAGE)
+			enemy.take_damage(tail_whip_damage)
