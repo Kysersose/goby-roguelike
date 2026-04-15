@@ -27,6 +27,17 @@ animations = [{
 "loop": true,
 "name": &"swim_up",
 "speed": 5.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": ExtResource("2_down")},
+{"duration": 1.0, "texture": ExtResource("5_right")},
+{"duration": 1.0, "texture": ExtResource("3_up")},
+{"duration": 1.0, "texture": ExtResource("4_left")},
+{"duration": 1.0, "texture": ExtResource("2_down")}
+],
+"loop": false,
+"name": &"tail_whip",
+"speed": 15.0
 }]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1"]
@@ -46,3 +57,7 @@ shape = SubResource("CapsuleShape2D_1")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 ignore_rotation = true
+limit_left = -2000
+limit_top = -2000
+limit_right = 2000
+limit_bottom = 2000
