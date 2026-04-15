@@ -1,80 +1,21 @@
-[gd_scene load_steps=4 format=3 uid="uid://mcb87ch4opai"]
+[gd_scene load_steps=5 format=3 uid="uid://mcb87ch4opai"]
 
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/HUD.tscn" id="2_hud"]
 [ext_resource type="Script" path="res://scripts/Game.gd" id="3_game"]
 [ext_resource type="PackedScene" path="res://scenes/Minnow.tscn" id="4_enemy"]
+[ext_resource type="Texture2D" path="res://assets/background/ocean_floor2.png" id="5_bg"]
 
 [node name="Game" type="Node2D" unique_id=1667545286]
 script = ExtResource("3_game")
 
-[node name="Background" type="ColorRect" parent="." unique_id=1649496005]
-offset_left = -2000.0
-offset_top = -2000.0
-offset_right = 2000.0
-offset_bottom = 2000.0
-color = Color(0.86, 0.78, 0.56, 1)
-
-[node name="Decor" type="Node2D" parent="." unique_id=1182857616]
-
-[node name="Rock1" type="ColorRect" parent="Decor" unique_id=259956355]
-offset_left = -300.0
-offset_top = -200.0
-offset_right = -240.0
-offset_bottom = -150.0
-color = Color(0.45, 0.43, 0.4, 1)
-
-[node name="Rock2" type="ColorRect" parent="Decor" unique_id=157148581]
-offset_left = 180.0
-offset_top = 120.0
-offset_right = 260.0
-offset_bottom = 180.0
-color = Color(0.38, 0.36, 0.34, 1)
-
-[node name="Rock3" type="ColorRect" parent="Decor" unique_id=1810352275]
-offset_left = -500.0
-offset_top = 300.0
-offset_right = -440.0
-offset_bottom = 360.0
-color = Color(0.5, 0.47, 0.43, 1)
-
-[node name="Rock4" type="ColorRect" parent="Decor" unique_id=1511577276]
-offset_left = 450.0
-offset_top = -400.0
-offset_right = 520.0
-offset_bottom = -340.0
-color = Color(0.42, 0.4, 0.37, 1)
-
-[node name="Rock5" type="ColorRect" parent="Decor" unique_id=458875139]
-offset_left = -100.0
-offset_top = 400.0
-offset_right = -60.0
-offset_bottom = 440.0
-color = Color(0.48, 0.45, 0.41, 1)
-
-[node name="Stick1" type="ColorRect" parent="Decor" unique_id=1419546416]
-offset_left = 100.0
-offset_top = -300.0
-offset_right = 180.0
-offset_bottom = -296.0
-rotation = 0.4
-color = Color(0.35, 0.22, 0.12, 1)
-
-[node name="Stick2" type="ColorRect" parent="Decor" unique_id=1312421768]
-offset_left = -400.0
-offset_top = 100.0
-offset_right = -300.0
-offset_bottom = 106.0
-rotation = -0.9
-color = Color(0.3, 0.2, 0.1, 1)
-
-[node name="Stick3" type="ColorRect" parent="Decor" unique_id=1208779550]
-offset_left = 350.0
-offset_top = 350.0
-offset_right = 420.0
-offset_bottom = 354.0
-rotation = 1.2
-color = Color(0.32, 0.21, 0.11, 1)
+[node name="Background" type="TextureRect" parent="." unique_id=1649496005]
+offset_left = -1500.0
+offset_top = -1500.0
+offset_right = 1500.0
+offset_bottom = 1500.0
+texture = ExtResource("5_bg")
+stretch_mode = 0
 
 [node name="Player" parent="." unique_id=1279210667 instance=ExtResource("1_player")]
 
