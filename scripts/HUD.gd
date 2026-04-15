@@ -17,7 +17,7 @@ var _ability_slots: Array = []
 
 const _ABILITY_DEFS: Array = [
 	{"key": "1", "name": "Tail\nWhip"},
-	{"key": "2", "name": "—"},
+	{"key": "2", "name": "Bubble\nBeam"},
 	{"key": "3", "name": "—"},
 	{"key": "4", "name": "—"},
 	{"key": "5", "name": "—"},
@@ -108,6 +108,9 @@ func _process(_delta: float) -> void:
 	# Slot 0: Tail Whip cooldown
 	var whip_pct: float = clampf(_player._whip_timer / _player.TAIL_WHIP_COOLDOWN, 0.0, 1.0)
 	_ability_slots[0].overlay.color = Color(0, 0, 0, whip_pct * 0.72)
+	# Slot 1: Bubble Beam cooldown
+	var bubble_pct: float = clampf(_player._bubble_beam_timer / _player.BUBBLE_BEAM_COOLDOWN, 0.0, 1.0)
+	_ability_slots[1].overlay.color = Color(0, 0, 0, bubble_pct * 0.72)
 	# Slot 5: Dash cooldown
 	var dash_pct: float = clampf(_player._dash_cooldown_timer / _player.DASH_COOLDOWN, 0.0, 1.0)
 	_ability_slots[5].overlay.color = Color(0, 0, 0, dash_pct * 0.72)

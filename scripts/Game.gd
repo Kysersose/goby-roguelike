@@ -2,22 +2,25 @@ extends Node2D
 
 const SPAWN_RANGE: float = 450.0
 const MIN_SPAWN_DIST: float = 150.0
-const KELP_INTERVAL: float = 40.0
+const KELP_INTERVAL: float = 28.0
+const ALGAE_INTERVAL: float = 30.0
 const MINNOW_BASE_INTERVAL: float = 5.0
-const SPAWN_SCALE_INTERVAL: float = 5.0
+const SPAWN_SCALE_INTERVAL: float = 3.0
 
 @onready var player = $Player
 @onready var hud = $HUD
 
 var _kelp_timer: float = KELP_INTERVAL
+var _algae_timer: float = ALGAE_INTERVAL
 var _minnow_timer: float = MINNOW_BASE_INTERVAL
 var _minnow_interval: float = MINNOW_BASE_INTERVAL
 var _spawn_scale_timer: float = SPAWN_SCALE_INTERVAL
 
 var _normal_kills: int = 0
-var _next_elite_at: int = 15
+var _next_elite_at: int = 8
 
 var _kelp_scene: PackedScene        = preload("res://scenes/Kelp.tscn")
+var _algae_scene: PackedScene       = preload("res://scenes/Algae.tscn")
 var _minnow_scene: PackedScene      = preload("res://scenes/Minnow.tscn")
 var _spiked_snail_scene: PackedScene = preload("res://scenes/SpikedSnail.tscn")
 var _upgrade_menu_scene: PackedScene = preload("res://scenes/UpgradeMenu.tscn")
@@ -66,23 +69,28 @@ func _on_normal_enemy_died(counted: bool) -> void:
 	_normal_kills += 1
 	if _normal_kills >= _next_elite_at:
 		_spawn(_spiked_snail_scene)
-		_next_elite_at += 15
+		_next_elite_at += 8
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.keycode == KEY_P and event.pressed and not event.echo:
 		hud.toggle_pause_menu()
 
 func _process(delta: float) -> void:
-	# Scale up spawn rate 1% every 5 seconds
+	# Scale up spawn rate 3% every 3 seconds
 	_spawn_scale_timer -= delta
 	if _spawn_scale_timer <= 0.0:
-		_minnow_interval = maxf(_minnow_interval * 0.99, 0.5)
+		_minnow_interval = maxf(_minnow_interval * 0.98, 0.5)
 		_spawn_scale_timer = SPAWN_SCALE_INTERVAL
 
 	_kelp_timer -= delta
 	if _kelp_timer <= 0.0:
 		_spawn(_kelp_scene)
 		_kelp_timer = KELP_INTERVAL
+
+	_algae_timer -= delta
+	if _algae_timer <= 0.0:
+		_spawn(_algae_scene)
+		_algae_timer = ALGAE_INTERVAL
 
 	_minnow_timer -= delta
 	if _minnow_timer <= 0.0:

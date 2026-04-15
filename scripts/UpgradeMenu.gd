@@ -13,6 +13,8 @@ const UPGRADES := [
 	 "values": {"Common": 1,   "Rare": 2,   "Epic": 3,   "Legendary": 5}},
 	{"name": "Aerodynamics", "stat": "speed",            "label": "Speed",
 	 "values": {"Common": 10,  "Rare": 20,  "Epic": 35,  "Legendary": 50}},
+	{"name": "Big Brain",   "stat": "special_damage",   "label": "Ability Damage",
+	 "values": {"Common": 0.5, "Rare": 1.0, "Epic": 1.5, "Legendary": 2.5}},
 ]
 
 const RARITIES        := ["Common", "Rare", "Epic", "Legendary"]

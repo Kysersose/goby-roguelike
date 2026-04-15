@@ -7,10 +7,12 @@ const CONTACT_DAMAGE: int = 6
 const DAMAGE_COOLDOWN: float = 1.0
 const XP_REWARD: int = 25
 
-const SHELL_INTERVAL: float = 8.0
+const SHELL_INTERVAL: float = 5.0
 const SHELL_DURATION: float = 3.0
 const SPIKE_FIRE_INTERVAL: float = 1.5
 const SPIKE_COUNT: int = 8
+
+const PROXIMITY_SHELL_RANGE: float = 70.0
 
 const COLOR_NORMAL: Color = Color(0.5, 0.38, 0.28)
 const COLOR_IMMUNE: Color = Color(0.72, 0.2, 0.9)
@@ -21,7 +23,6 @@ var _damage_timer: float = 0.0
 var _stun_timer: float = 0.0
 var _shell_timer: float = SHELL_INTERVAL
 var _in_shell: bool = false
-var _first_hit: bool = true
 var _shell_duration_timer: float = 0.0
 var _spike_fire_timer: float = 0.0
 var _player: CharacterBody2D = null
@@ -57,9 +58,13 @@ func _physics_process(delta: float) -> void:
 			_exit_shell()
 		velocity = Vector2.ZERO
 	else:
-		_shell_timer -= delta
-		if _shell_timer <= 0.0:
+		var dist := global_position.distance_to(_player.global_position)
+		if dist <= PROXIMITY_SHELL_RANGE:
 			_enter_shell()
+		else:
+			_shell_timer -= delta
+			if _shell_timer <= 0.0:
+				_enter_shell()
 		var dir := (_player.global_position - global_position).normalized()
 		velocity = dir * SPEED
 
@@ -97,10 +102,6 @@ func _shoot_spikes() -> void:
 
 func take_damage(amount: float, _counted: bool = true) -> void:
 	if _in_shell:
-		return
-	if _first_hit:
-		_first_hit = false
-		_enter_shell()
 		return
 	hp -= amount
 	_stun_timer = 0.25

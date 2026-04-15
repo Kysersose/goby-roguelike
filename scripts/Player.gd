@@ -15,9 +15,14 @@ const DASH_COOLDOWN: float = 5.0
 const ZOOM_STEP: float = 0.1
 const ZOOM_MIN: float = 0.3
 const ZOOM_MAX: float = 2.0
+const BUBBLE_BEAM_COOLDOWN: float = 4.0
+const BUBBLE_BEAM_MANA_COST: int = 3
+const BUBBLE_BEAM_COUNT: int = 3
+const BUBBLE_BEAM_INTERVAL: float = 0.2
 
 var speed: float = 150.0
 var tail_whip_damage: float = 2.5
+var special_damage: float = 0.0
 var intelligence: int = 0
 var defense: int = 0
 
@@ -25,6 +30,7 @@ var defense: int = 0
 @onready var camera: Camera2D = $Camera2D
 
 var _dmg_num_scene: PackedScene = preload("res://scenes/DamageNumber.tscn")
+var _bubble_scene: PackedScene = preload("res://scenes/Bubble.tscn")
 
 var max_hp: int = 20
 var hp: int = 20
@@ -39,6 +45,10 @@ var _dashing: bool = false
 var _dash_timer: float = 0.0
 var _dash_cooldown_timer: float = 0.0
 var _dash_direction: Vector2 = Vector2.DOWN
+var _bubble_beam_timer: float = 0.0
+var _bubble_shots_remaining: int = 0
+var _bubble_shot_timer: float = 0.0
+var _bubble_direction: Vector2 = Vector2.RIGHT
 
 func _ready() -> void:
 	add_to_group("player")
@@ -103,6 +113,8 @@ func apply_upgrade(stat: String, amount: float) -> void:
 			defense += int(amount)
 		"speed":
 			speed += amount
+		"special_damage":
+			special_damage += amount
 
 func heal(amount: int) -> void:
 	hp = mini(hp + amount, max_hp)
@@ -132,7 +144,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				if not _dashing and _whip_timer <= 0.0:
 					_tail_whip()
 					_whip_timer = TAIL_WHIP_COOLDOWN
-			KEY_2, KEY_3, KEY_4, KEY_5:
+			KEY_2:
+				_activate_bubble_beam()
+			KEY_3, KEY_4, KEY_5:
 				pass # reserved for future abilities
 			KEY_SPACE:
 				_dash()
@@ -196,6 +210,31 @@ func _physics_process(delta: float) -> void:
 	_whip_timer -= delta
 	if _dash_cooldown_timer > 0.0:
 		_dash_cooldown_timer -= delta
+	if _bubble_beam_timer > 0.0:
+		_bubble_beam_timer -= delta
+	if _bubble_shots_remaining > 0:
+		_bubble_shot_timer -= delta
+		if _bubble_shot_timer <= 0.0:
+			_fire_bubble()
+			_bubble_shots_remaining -= 1
+			_bubble_shot_timer = BUBBLE_BEAM_INTERVAL
+
+func _activate_bubble_beam() -> void:
+	if _bubble_beam_timer > 0.0 or _bubble_shots_remaining > 0:
+		return
+	if not use_mana(BUBBLE_BEAM_MANA_COST):
+		return
+	_bubble_direction = (get_global_mouse_position() - global_position).normalized()
+	_bubble_beam_timer = BUBBLE_BEAM_COOLDOWN
+	_fire_bubble()
+	_bubble_shots_remaining = BUBBLE_BEAM_COUNT - 1
+	_bubble_shot_timer = BUBBLE_BEAM_INTERVAL
+
+func _fire_bubble() -> void:
+	var b := _bubble_scene.instantiate()
+	b.global_position = global_position
+	b.setup(_bubble_direction, special_damage)
+	get_tree().current_scene.add_child(b)
 
 func _tail_whip() -> void:
 	_attacking = true
