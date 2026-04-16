@@ -26,13 +26,20 @@ const RARITY_COLORS   := {
 	"Legendary": Color(1.0,  0.55, 0.1),
 }
 
+const INPUT_GRACE_PERIOD: float = 0.35
+
 @onready var card_container: HBoxContainer = $Control/CardContainer
+
+var _accepting_input: bool = false
 
 func _ready() -> void:
 	card_container.add_theme_constant_override("separation", 24)
 	var picks := _generate_picks()
 	for pick in picks:
 		_build_card(pick)
+	get_tree().create_timer(INPUT_GRACE_PERIOD).timeout.connect(func() -> void:
+		_accepting_input = true
+	)
 
 func _generate_picks() -> Array:
 	var pool := UPGRADES.duplicate()
@@ -111,6 +118,8 @@ func _build_card(pick: Dictionary) -> void:
 	vbox.add_child(value_lbl)
 
 	panel.gui_input.connect(func(event: InputEvent) -> void:
+		if not _accepting_input:
+			return
 		if event is InputEventMouseButton \
 		and event.button_index == MOUSE_BUTTON_LEFT \
 		and event.pressed:

@@ -69,13 +69,10 @@ func _physics_process(delta: float) -> void:
 			_exit_shell()
 		velocity = Vector2.ZERO
 	else:
+		_shell_timer -= delta
 		var dist := global_position.distance_to(_player.global_position)
-		if dist <= PROXIMITY_SHELL_RANGE:
+		if _shell_timer <= 0.0 and dist <= PROXIMITY_SHELL_RANGE:
 			_enter_shell()
-		else:
-			_shell_timer -= delta
-			if _shell_timer <= 0.0:
-				_enter_shell()
 		var dir := (_player.global_position - global_position).normalized()
 		velocity = dir * SPEED
 
