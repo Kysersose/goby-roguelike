@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=3]
+[gd_scene load_steps=38 format=3]
 
 [ext_resource type="Script" path="res://scripts/Player.gd" id="1_player"]
 [ext_resource type="Texture2D" uid="uid://bs64c5gixen81" path="res://assets/sprites/player/goby_left_idle.png" id="7_left_idle"]
@@ -249,6 +249,10 @@ animations = [{
 radius = 8.0
 height = 28.0
 
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_2"]
+radius = 30.0
+height = 80.0
+
 [node name="Player" type="CharacterBody2D"]
 script = ExtResource("1_player")
 
@@ -268,3 +272,14 @@ limit_left = -1500
 limit_top = -1500
 limit_right = 1500
 limit_bottom = 1500
+
+[node name="TailWhipHitbox" type="Area2D" parent="."]
+collision_layer = 8
+collision_mask = 2
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="TailWhipHitbox"]
+rotation = 1.5707963
+shape = SubResource("CapsuleShape2D_2")
+disabled = true
+debug_color = Color(1, 0.5, 0, 0.35)

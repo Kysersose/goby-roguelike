@@ -1,10 +1,14 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/Minnow.gd" id="1_minnow"]
 [ext_resource type="Texture2D" path="res://assets/sprites/enemies/minnow.png" id="2_minnow_tex"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
-size = Vector2(7, 5)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1"]
+radius = 12.0
+height = 45.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 10.0
 
 [node name="Minnow" type="CharacterBody2D"]
 script = ExtResource("1_minnow")
@@ -14,4 +18,14 @@ scale = Vector2(0.2, 0.2)
 texture = ExtResource("2_minnow_tex")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("RectangleShape2D_1")
+rotation = 1.5707963
+shape = SubResource("CapsuleShape2D_1")
+debug_color = Color(1, 1, 0, 0.35)
+
+[node name="HurtBox" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
+shape = SubResource("CircleShape2D_1")
+debug_color = Color(1, 0, 0, 0.35)

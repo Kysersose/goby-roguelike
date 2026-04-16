@@ -6,16 +6,17 @@ signal experience_changed(current: int, needed: int)
 signal level_changed(level: int)
 signal died
 
-const TAIL_WHIP_RANGE: float = 100.0
 const TAIL_WHIP_COOLDOWN: float = 0.5
 const TAIL_WHIP_WIND_UP: float = 0.15
-const TAIL_WHIP_CONE_DEGREES: float = 120.0
 const TAIL_WHIP_KNOCKBACK: float = 400.0
+const TAIL_WHIP_HITBOX_OFFSET: float = 60.0
+const TAIL_WHIP_RANGE: float = 100.0
 const HIT_STOP_DURATION: float = 0.05
 const HIT_STOP_SCALE: float = 0.05
 const DASH_DURATION: float = 0.25
 const DASH_SPEED_MULTIPLIER: float = 2.0
 const DASH_COOLDOWN: float = 5.0
+const DASH_ANIM_SPEED_SCALE: float = 3.0
 const ZOOM_STEP: float = 0.1
 const ZOOM_MIN: float = 0.3
 const ZOOM_MAX: float = 2.0
@@ -32,6 +33,8 @@ var defense: int = 0
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var camera: Camera2D = $Camera2D
+@onready var tail_whip_hitbox: Area2D = $TailWhipHitbox
+@onready var tail_whip_hitbox_shape: CollisionShape2D = $TailWhipHitbox/CollisionShape2D
 
 var _dmg_num_scene: PackedScene = preload("res://scenes/DamageNumber.tscn")
 var _bubble_scene: PackedScene = preload("res://scenes/Bubble.tscn")
@@ -139,6 +142,7 @@ func restore_mana(amount: int) -> void:
 func _on_animation_finished() -> void:
 	if sprite.animation == "tail_whip":
 		_attacking = false
+		tail_whip_hitbox_shape.disabled = true
 		_play_anim(_last_anim)
 		sprite.pause()
 
@@ -178,6 +182,14 @@ func _dash() -> void:
 	_dashing = true
 	_dash_timer = DASH_DURATION
 	_dash_cooldown_timer = DASH_COOLDOWN
+	var dash_anim: String
+	if absf(_dash_direction.x) > absf(_dash_direction.y):
+		dash_anim = "swim_right" if _dash_direction.x > 0.0 else "swim_left"
+	else:
+		dash_anim = "swim_down" if _dash_direction.y > 0.0 else "swim_up"
+	_last_anim = dash_anim
+	_play_anim(dash_anim)
+	sprite.speed_scale = DASH_ANIM_SPEED_SCALE
 
 func _physics_process(delta: float) -> void:
 	if _dashing:
@@ -185,6 +197,7 @@ func _physics_process(delta: float) -> void:
 		velocity = _dash_direction * speed * DASH_SPEED_MULTIPLIER
 		if _dash_timer <= 0.0:
 			_dashing = false
+			sprite.speed_scale = 1.0
 		move_and_slide()
 		return
 
@@ -263,23 +276,86 @@ func _tail_whip() -> void:
 	_play_anim("tail_whip")
 	_whip_damage_pending = true
 	_whip_damage_timer = TAIL_WHIP_WIND_UP
+	var aim := get_global_mouse_position() - global_position
+	var aim_dir := aim.normalized() if aim.length() > 0.001 else Vector2.RIGHT
+	tail_whip_hitbox.rotation = aim_dir.angle()
+	tail_whip_hitbox.position = aim_dir * TAIL_WHIP_HITBOX_OFFSET
+	tail_whip_hitbox_shape.disabled = false
+	_spawn_tail_whip_vfx(aim_dir)
+
+func _spawn_tail_whip_vfx(aim_dir: Vector2) -> void:
+	var scene_root := get_tree().current_scene
+	var origin := global_position
+	var impact_point := origin + aim_dir * TAIL_WHIP_HITBOX_OFFSET
+	var base_angle := aim_dir.angle()
+
+	# Main slash cone — 5 aqua spread lines plus 2 white edge borders.
+	var slash := Node2D.new()
+	slash.position = origin
+	slash.scale = Vector2(0.3, 0.3)
+	scene_root.add_child(slash)
+
+	var taper := Curve.new()
+	taper.add_point(Vector2(0.0, 1.0))
+	taper.add_point(Vector2(1.0, 1.0 / 5.0))
+	var slash_color := Color(0.2, 0.9, 0.85, 0.9)
+	var border_color := Color(1.0, 1.0, 1.0, 0.5)
+
+	for offset_deg in [-60.0, -30.0, 0.0, 30.0, 60.0]:
+		var line := Line2D.new()
+		line.rotation = base_angle + deg_to_rad(offset_deg)
+		line.points = PackedVector2Array([Vector2.ZERO, Vector2(TAIL_WHIP_RANGE, 0.0)])
+		line.width = 5.0
+		line.width_curve = taper
+		line.default_color = slash_color
+		line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		line.end_cap_mode = Line2D.LINE_CAP_ROUND
+		slash.add_child(line)
+
+	for offset_deg in [-60.0, 60.0]:
+		var border := Line2D.new()
+		border.rotation = base_angle + deg_to_rad(offset_deg)
+		border.points = PackedVector2Array([Vector2.ZERO, Vector2(TAIL_WHIP_RANGE, 0.0)])
+		border.width = 2.0
+		border.default_color = border_color
+		border.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		border.end_cap_mode = Line2D.LINE_CAP_ROUND
+		slash.add_child(border)
+
+	var slash_tween := slash.create_tween()
+	slash_tween.tween_property(slash, "scale", Vector2(1.0, 1.0), 0.06)
+	slash_tween.tween_property(slash, "modulate:a", 0.0, 0.12)
+	slash_tween.tween_callback(slash.queue_free)
+
+	# Hit spark — 5 short white lines radiating from the impact point.
+	var burst := Node2D.new()
+	burst.position = impact_point
+	scene_root.add_child(burst)
+
+	var burst_color := Color(1.0, 1.0, 1.0, 0.8)
+	for i in 5:
+		var line := Line2D.new()
+		line.rotation = deg_to_rad(i * 72.0)
+		line.points = PackedVector2Array([Vector2.ZERO, Vector2(18.0, 0.0)])
+		line.width = 3.0
+		line.default_color = burst_color
+		line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		line.end_cap_mode = Line2D.LINE_CAP_ROUND
+		burst.add_child(line)
+
+	var burst_tween := burst.create_tween()
+	burst_tween.tween_property(burst, "modulate:a", 0.0, 0.08)
+	burst_tween.tween_callback(burst.queue_free)
 
 func _resolve_tail_whip() -> void:
-	var aim := get_global_mouse_position() - global_position
-	if aim.length() < 0.001:
-		return
-	var aim_dir := aim.normalized()
-	var cone_half_rad := deg_to_rad(TAIL_WHIP_CONE_DEGREES * 0.5)
 	var hit_any := false
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		var to_enemy: Vector2 = enemy.global_position - global_position
-		if to_enemy.length() > TAIL_WHIP_RANGE:
-			continue
-		var enemy_dir := to_enemy.normalized()
-		if acos(clampf(aim_dir.dot(enemy_dir), -1.0, 1.0)) > cone_half_rad:
+	for area in tail_whip_hitbox.get_overlapping_areas():
+		var enemy := area.get_parent()
+		if enemy == null or not enemy.is_in_group("enemies"):
 			continue
 		enemy.take_damage(tail_whip_damage)
 		if enemy.has_method("apply_knockback"):
+			var enemy_dir: Vector2 = (enemy.global_position - global_position).normalized()
 			enemy.apply_knockback(enemy_dir * TAIL_WHIP_KNOCKBACK)
 		hit_any = true
 	if hit_any:
