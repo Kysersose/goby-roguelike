@@ -21,6 +21,8 @@ var _dash_cooldown_timer: float = DASH_COOLDOWN
 var _dash_active_timer: float = 0.0
 var _dash_dir: Vector2 = Vector2.ZERO
 var _is_dashing: bool = false
+var _knockback_velocity: Vector2 = Vector2.ZERO
+var _knockback_timer: float = 0.0
 var _player: CharacterBody2D = null
 var _dmg_num_scene: PackedScene = preload("res://scenes/DamageNumber.tscn")
 
@@ -32,6 +34,15 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if _player == null:
+		return
+
+	if _knockback_timer > 0.0:
+		_knockback_timer -= delta
+		_knockback_velocity = _knockback_velocity.lerp(Vector2.ZERO, delta * 6.0)
+		velocity = _knockback_velocity
+		move_and_slide()
+		if _stun_timer > 0.0:
+			_stun_timer -= delta
 		return
 
 	if _stun_timer > 0.0:
@@ -74,6 +85,11 @@ func _physics_process(delta: float) -> void:
 				_is_dashing = false
 				_retreat_timer = RETREAT_DURATION
 				break
+
+func apply_knockback(impulse: Vector2) -> void:
+	_knockback_velocity = impulse
+	_knockback_timer = 0.2
+	_is_dashing = false
 
 func take_damage(amount: float, counted: bool = true) -> void:
 	hp -= amount

@@ -25,6 +25,8 @@ var _shell_timer: float = SHELL_INTERVAL
 var _in_shell: bool = false
 var _shell_duration_timer: float = 0.0
 var _spike_fire_timer: float = 0.0
+var _knockback_velocity: Vector2 = Vector2.ZERO
+var _knockback_timer: float = 0.0
 var _player: CharacterBody2D = null
 
 @onready var body: Polygon2D = $Body
@@ -40,6 +42,15 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if _player == null:
+		return
+
+	if _knockback_timer > 0.0:
+		_knockback_timer -= delta
+		_knockback_velocity = _knockback_velocity.lerp(Vector2.ZERO, delta * 6.0)
+		velocity = _knockback_velocity
+		move_and_slide()
+		if _stun_timer > 0.0:
+			_stun_timer -= delta
 		return
 
 	if _stun_timer > 0.0:
@@ -99,6 +110,12 @@ func _shoot_spikes() -> void:
 		spike.direction = dir
 		spike.source = self
 		get_tree().current_scene.add_child(spike)
+
+func apply_knockback(impulse: Vector2) -> void:
+	if _in_shell:
+		return
+	_knockback_velocity = impulse
+	_knockback_timer = 0.2
 
 func take_damage(amount: float, _counted: bool = true) -> void:
 	if _in_shell:

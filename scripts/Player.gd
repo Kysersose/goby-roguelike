@@ -9,6 +9,11 @@ signal died
 const TARGET_SIZE: float = 128.0
 const TAIL_WHIP_RANGE: float = 100.0
 const TAIL_WHIP_COOLDOWN: float = 0.5
+const TAIL_WHIP_WIND_UP: float = 0.15
+const TAIL_WHIP_CONE_DEGREES: float = 120.0
+const TAIL_WHIP_KNOCKBACK: float = 400.0
+const HIT_STOP_DURATION: float = 0.05
+const HIT_STOP_SCALE: float = 0.05
 const DASH_DURATION: float = 0.25
 const DASH_SPEED_MULTIPLIER: float = 2.0
 const DASH_COOLDOWN: float = 5.0
@@ -20,7 +25,7 @@ const BUBBLE_BEAM_MANA_COST: int = 3
 const BUBBLE_BEAM_COUNT: int = 3
 const BUBBLE_BEAM_INTERVAL: float = 0.2
 
-var speed: float = 150.0
+var speed: float = 200.0
 var tail_whip_damage: float = 2.5
 var special_damage: float = 0.0
 var intelligence: int = 0
@@ -40,6 +45,8 @@ var xp: int = 0
 var level: int = 1
 var _last_anim: String = "swim_down"
 var _whip_timer: float = 0.0
+var _whip_damage_pending: bool = false
+var _whip_damage_timer: float = 0.0
 var _attacking: bool = false
 var _dashing: bool = false
 var _dash_timer: float = 0.0
@@ -189,7 +196,7 @@ func _physics_process(delta: float) -> void:
 	if not _attacking:
 		if holding and to_mouse.length() > 1.0:
 			var dir := to_mouse.normalized()
-			velocity = dir * speed
+			velocity = velocity.lerp(dir * speed, delta * 4.0)
 
 			var anim: String
 			if absf(dir.x) > absf(dir.y):
@@ -203,11 +210,27 @@ func _physics_process(delta: float) -> void:
 			elif not sprite.is_playing():
 				sprite.play(anim)
 		else:
-			velocity = Vector2.ZERO
+			velocity = velocity.lerp(Vector2.ZERO, delta * 2.5)
+			if not holding and to_mouse.length() > 1.0:
+				var dir := to_mouse.normalized()
+				var anim: String
+				if absf(dir.x) > absf(dir.y):
+					anim = "swim_right" if dir.x > 0.0 else "swim_left"
+				else:
+					anim = "swim_down" if dir.y > 0.0 else "swim_up"
+				if anim != _last_anim:
+					_last_anim = anim
+					sprite.play(anim)
+				sprite.frame = 0
 			sprite.pause()
 
 	move_and_slide()
 	_whip_timer -= delta
+	if _whip_damage_pending:
+		_whip_damage_timer -= delta
+		if _whip_damage_timer <= 0.0:
+			_whip_damage_pending = false
+			_resolve_tail_whip()
 	if _dash_cooldown_timer > 0.0:
 		_dash_cooldown_timer -= delta
 	if _bubble_beam_timer > 0.0:
@@ -239,6 +262,31 @@ func _fire_bubble() -> void:
 func _tail_whip() -> void:
 	_attacking = true
 	sprite.play("tail_whip")
+	_whip_damage_pending = true
+	_whip_damage_timer = TAIL_WHIP_WIND_UP
+
+func _resolve_tail_whip() -> void:
+	var aim := get_global_mouse_position() - global_position
+	if aim.length() < 0.001:
+		return
+	var aim_dir := aim.normalized()
+	var cone_half_rad := deg_to_rad(TAIL_WHIP_CONE_DEGREES * 0.5)
+	var hit_any := false
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if global_position.distance_to(enemy.global_position) <= TAIL_WHIP_RANGE:
-			enemy.take_damage(tail_whip_damage)
+		var to_enemy: Vector2 = enemy.global_position - global_position
+		if to_enemy.length() > TAIL_WHIP_RANGE:
+			continue
+		var enemy_dir := to_enemy.normalized()
+		if acos(clampf(aim_dir.dot(enemy_dir), -1.0, 1.0)) > cone_half_rad:
+			continue
+		enemy.take_damage(tail_whip_damage)
+		if enemy.has_method("apply_knockback"):
+			enemy.apply_knockback(enemy_dir * TAIL_WHIP_KNOCKBACK)
+		hit_any = true
+	if hit_any:
+		_do_hit_stop()
+
+func _do_hit_stop() -> void:
+	Engine.time_scale = HIT_STOP_SCALE
+	var t := get_tree().create_timer(HIT_STOP_DURATION, true, false, true)
+	t.timeout.connect(func() -> void: Engine.time_scale = 1.0)

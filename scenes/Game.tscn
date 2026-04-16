@@ -1,10 +1,21 @@
-[gd_scene load_steps=5 format=3 uid="uid://mcb87ch4opai"]
+[gd_scene format=3 uid="uid://mcb87ch4opai"]
 
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/HUD.tscn" id="2_hud"]
-[ext_resource type="Script" path="res://scripts/Game.gd" id="3_game"]
+[ext_resource type="Script" uid="uid://bmk8qeswlsa2k" path="res://scripts/Game.gd" id="3_game"]
 [ext_resource type="PackedScene" path="res://scenes/Minnow.tscn" id="4_enemy"]
-[ext_resource type="Texture2D" path="res://assets/background/ocean_floor2.png" id="5_bg"]
+[ext_resource type="Texture2D" uid="uid://yra4yexm8p4y" path="res://assets/background/ocean_floor2.png" id="5_bg"]
+[ext_resource type="Shader" uid="uid://cm5bqvoyugfxi" path="res://shaders/caustics.gdshader" id="6_caustics"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_caustics"]
+shader = ExtResource("6_caustics")
+shader_parameter/opacity = 1.0
+shader_parameter/tint = Color(1, 0.96, 0.78, 1)
+shader_parameter/drift_speed = 1.4150000672125
+shader_parameter/scale = 85.2410040014475
+shader_parameter/band_min = 0.3090000146775
+shader_parameter/band_max = 0.0
+shader_parameter/wobble = 2.5230001198425
 
 [node name="Game" type="Node2D" unique_id=1667545286]
 script = ExtResource("3_game")
@@ -15,11 +26,18 @@ offset_top = -1500.0
 offset_right = 1500.0
 offset_bottom = 1500.0
 texture = ExtResource("5_bg")
-stretch_mode = 0
+
+[node name="Caustics" type="ColorRect" parent="." unique_id=1535413030]
+material = SubResource("ShaderMaterial_caustics")
+offset_left = -1500.0
+offset_top = -1500.0
+offset_right = 1500.0
+offset_bottom = 1500.0
+mouse_filter = 2
 
 [node name="Player" parent="." unique_id=1279210667 instance=ExtResource("1_player")]
 
-[node name="HUD" parent="." instance=ExtResource("2_hud")]
+[node name="HUD" parent="." unique_id=191812722 instance=ExtResource("2_hud")]
 
-[node name="Minnow" parent="." instance=ExtResource("4_enemy")]
+[node name="Minnow" parent="." unique_id=1276226160 instance=ExtResource("4_enemy")]
 position = Vector2(300, 200)
