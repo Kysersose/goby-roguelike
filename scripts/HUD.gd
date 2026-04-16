@@ -6,7 +6,7 @@ extends CanvasLayer
 @onready var mana_label: Label = $Control/ManaLabel
 @onready var xp_label: Label = $Control/XPLabel
 @onready var level_label: Label = $Control/LevelLabel
-@onready var game_over_label: Label = $Control/GameOverLabel
+@onready var game_over_menu: Control = $Control/GameOverMenu
 @onready var pause_menu: Control = $Control/PauseMenu
 @onready var ability_bar: HBoxContainer = $Control/AbilityBar
 
@@ -37,6 +37,9 @@ func _ready() -> void:
 	$Control/PauseMenu/SaveRunButton.pressed.connect(_on_save_run_pressed)
 	$Control/PauseMenu/SettingsButton.pressed.connect(_on_settings_pressed)
 	$Control/PauseMenu/ExitButton.pressed.connect(_on_exit_pressed)
+
+	$Control/GameOverMenu/NewGameButton.pressed.connect(_on_new_game_pressed)
+	$Control/GameOverMenu/MainMenuButton.pressed.connect(_on_main_menu_pressed)
 
 	_build_ability_bar()
 
@@ -133,7 +136,7 @@ func update_level(lvl: int) -> void:
 
 func show_game_over() -> void:
 	_game_over = true
-	game_over_label.visible = true
+	game_over_menu.visible = true
 	get_tree().paused = true
 
 func toggle_pause_menu() -> void:
@@ -155,3 +158,11 @@ func _on_settings_pressed() -> void:
 func _on_exit_pressed() -> void:
 	get_tree().paused = false
 	get_tree().change_scene_to_file("res://scenes/Game.tscn")
+
+func _on_new_game_pressed() -> void:
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://scenes/Game.tscn")
+
+func _on_main_menu_pressed() -> void:
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")

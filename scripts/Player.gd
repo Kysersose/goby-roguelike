@@ -6,7 +6,6 @@ signal experience_changed(current: int, needed: int)
 signal level_changed(level: int)
 signal died
 
-const TARGET_SIZE: float = 128.0
 const TAIL_WHIP_RANGE: float = 100.0
 const TAIL_WHIP_COOLDOWN: float = 0.5
 const TAIL_WHIP_WIND_UP: float = 0.15
@@ -59,19 +58,18 @@ var _bubble_direction: Vector2 = Vector2.RIGHT
 
 func _ready() -> void:
 	add_to_group("player")
-	var tex := sprite.sprite_frames.get_frame_texture(_last_anim, 0)
-	if tex != null:
-		var size := tex.get_size()
-		var longest := maxf(size.x, size.y)
-		if longest > 0.0:
-			var s := TARGET_SIZE / longest
-			sprite.scale = Vector2(s, s)
-	sprite.play(_last_anim)
+	_play_anim(_last_anim)
 	sprite.pause()
 	health_changed.emit(hp, max_hp)
 	mana_changed.emit(mp, max_mp)
 	experience_changed.emit(xp, _xp_for_level(level))
 	sprite.animation_finished.connect(_on_animation_finished)
+
+# idle_right and swim_right reuse the left-facing frames mirrored — all other
+# animations must render unflipped.
+func _play_anim(anim_name: String) -> void:
+	sprite.flip_h = (anim_name == "idle_right" or anim_name == "swim_right")
+	sprite.play(anim_name)
 
 func take_damage(amount: int) -> void:
 	if _dashing:
@@ -141,7 +139,7 @@ func restore_mana(amount: int) -> void:
 func _on_animation_finished() -> void:
 	if sprite.animation == "tail_whip":
 		_attacking = false
-		sprite.play(_last_anim)
+		_play_anim(_last_anim)
 		sprite.pause()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -206,23 +204,24 @@ func _physics_process(delta: float) -> void:
 
 			if anim != _last_anim:
 				_last_anim = anim
-				sprite.play(anim)
+				_play_anim(anim)
 			elif not sprite.is_playing():
-				sprite.play(anim)
+				_play_anim(anim)
 		else:
 			velocity = velocity.lerp(Vector2.ZERO, delta * 2.5)
-			if not holding and to_mouse.length() > 1.0:
-				var dir := to_mouse.normalized()
+			if not holding:
 				var anim: String
-				if absf(dir.x) > absf(dir.y):
-					anim = "swim_right" if dir.x > 0.0 else "swim_left"
+				if absf(to_mouse.y) > absf(to_mouse.x):
+					anim = "idle_up" if to_mouse.y < 0.0 else "idle_down"
 				else:
-					anim = "swim_down" if dir.y > 0.0 else "swim_up"
+					anim = "idle_right" if to_mouse.x >= 0.0 else "idle_left"
 				if anim != _last_anim:
 					_last_anim = anim
-					sprite.play(anim)
-				sprite.frame = 0
-			sprite.pause()
+					_play_anim(anim)
+				elif not sprite.is_playing():
+					_play_anim(anim)
+			else:
+				sprite.pause()
 
 	move_and_slide()
 	_whip_timer -= delta
@@ -261,7 +260,7 @@ func _fire_bubble() -> void:
 
 func _tail_whip() -> void:
 	_attacking = true
-	sprite.play("tail_whip")
+	_play_anim("tail_whip")
 	_whip_damage_pending = true
 	_whip_damage_timer = TAIL_WHIP_WIND_UP
 
