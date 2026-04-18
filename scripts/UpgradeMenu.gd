@@ -3,18 +3,22 @@ extends CanvasLayer
 signal upgrade_chosen(stat: String, amount: float)
 
 const UPGRADES := [
-	{"name": "Tail Fin",     "stat": "tail_whip_damage", "label": "Damage",
+	{"name": "Tail Fin",     "stat": "tail_whip_damage",  "label": "Damage",
 	 "values": {"Common": 0.5, "Rare": 1.0, "Epic": 1.5, "Legendary": 2.5}},
-	{"name": "Girth",        "stat": "max_hp",           "label": "Max HP",
+	{"name": "Girth",        "stat": "max_hp",            "label": "Max HP",
 	 "values": {"Common": 2,   "Rare": 4,   "Epic": 6,   "Legendary": 10}},
-	{"name": "Forehead",     "stat": "intelligence",     "label": "Intelligence",
+	{"name": "Forehead",     "stat": "intelligence",      "label": "Intelligence",
 	 "values": {"Common": 1,   "Rare": 2,   "Epic": 3,   "Legendary": 5}},
-	{"name": "Scales",       "stat": "defense",          "label": "Defense",
+	{"name": "Scales",       "stat": "defense",           "label": "Defense",
 	 "values": {"Common": 1,   "Rare": 2,   "Epic": 3,   "Legendary": 5}},
-	{"name": "Aerodynamics", "stat": "speed",            "label": "Speed",
+	{"name": "Aerodynamics", "stat": "speed",             "label": "Speed",
 	 "values": {"Common": 10,  "Rare": 20,  "Epic": 35,  "Legendary": 50}},
-	{"name": "Big Brain",   "stat": "special_damage",   "label": "Ability Damage",
+	{"name": "Big Brain",    "stat": "special_damage",    "label": "Ability Damage",
 	 "values": {"Common": 0.5, "Rare": 1.0, "Epic": 1.5, "Legendary": 2.5}},
+	{"name": "Gills",        "stat": "stamina_regen_rate","label": "Stamina Regen %",
+	 "values": {"Common": 3,   "Rare": 5,   "Epic": 8,   "Legendary": 15}},
+	{"name": "Luck",         "stat": "luck",              "label": "Luck",
+	 "values": {"Common": 1,   "Rare": 2,   "Epic": 3,   "Legendary": 5}},
 ]
 
 const RARITIES        := ["Common", "Rare", "Epic", "Legendary"]
@@ -30,6 +34,7 @@ const INPUT_GRACE_PERIOD: float = 0.35
 
 @onready var card_container: HBoxContainer = $Control/CardContainer
 
+var luck: int = 0
 var _accepting_input: bool = false
 
 func _ready() -> void:
@@ -50,13 +55,20 @@ func _generate_picks() -> Array:
 	return picks
 
 func _random_rarity() -> String:
+	# Each luck point shifts 3 weight from Common to the higher rarities (+1 each).
+	var weights := []
+	for i in RARITY_WEIGHTS.size():
+		if i == 0:
+			weights.append(maxi(RARITY_WEIGHTS[i] - luck * 3, 0))
+		else:
+			weights.append(RARITY_WEIGHTS[i] + luck)
 	var total := 0
-	for w in RARITY_WEIGHTS:
+	for w in weights:
 		total += w
 	var roll := randi() % total
 	var cumulative := 0
 	for i in RARITIES.size():
-		cumulative += RARITY_WEIGHTS[i]
+		cumulative += weights[i]
 		if roll < cumulative:
 			return RARITIES[i]
 	return "Common"

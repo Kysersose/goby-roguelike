@@ -7,12 +7,12 @@ const CONTACT_DAMAGE: int = 6
 const DAMAGE_COOLDOWN: float = 1.0
 const XP_REWARD: int = 25
 
-const SHELL_INTERVAL: float = 5.0
+const SHELL_INTERVAL: float = 7.0
 const SHELL_DURATION: float = 3.0
 const SPIKE_FIRE_INTERVAL: float = 1.5
 const SPIKE_COUNT: int = 8
 
-const PROXIMITY_SHELL_RANGE: float = 70.0
+const PROXIMITY_SHELL_RANGE: float = 240.0
 
 const COLOR_NORMAL: Color = Color(0.5, 0.38, 0.28)
 const COLOR_IMMUNE: Color = Color(0.72, 0.2, 0.9)
