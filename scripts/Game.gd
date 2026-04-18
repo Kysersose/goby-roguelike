@@ -2,7 +2,7 @@ extends Node2D
 
 const SPAWN_RANGE: float = 450.0
 const MIN_SPAWN_DIST: float = 150.0
-const MINNOW_BASE_INTERVAL: float = 5.5
+const MINNOW_BASE_INTERVAL: float = 2.5
 const SPAWN_SCALE_INTERVAL: float = 3.0
 const BOSS_SPAWN_TIME: float = 300.0
 const SEAWEED_COUNT: int = 10
@@ -13,7 +13,7 @@ const SEAWEED_SPACING: float = 400.0
 @onready var player = $Player
 @onready var hud = $HUD
 
-var _minnow_timer: float = MINNOW_BASE_INTERVAL
+var _minnow_timer: float = 0.0
 var _minnow_interval: float = MINNOW_BASE_INTERVAL
 var _spawn_scale_timer: float = SPAWN_SCALE_INTERVAL
 
