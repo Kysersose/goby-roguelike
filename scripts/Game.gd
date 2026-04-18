@@ -5,6 +5,7 @@ const MIN_SPAWN_DIST: float = 150.0
 const MINNOW_BASE_INTERVAL: float = 2.5
 const SPAWN_SCALE_INTERVAL: float = 3.0
 const BOSS_SPAWN_TIME: float = 300.0
+const SNAIL_INITIAL_DELAY: float = 15.0
 const SEAWEED_COUNT: int = 10
 const SEAWEED_MAP_RANGE: float = 1600.0
 const SEAWEED_MIN_DIST: float = 250.0
@@ -17,8 +18,7 @@ var _minnow_timer: float = 0.0
 var _minnow_interval: float = MINNOW_BASE_INTERVAL
 var _spawn_scale_timer: float = SPAWN_SCALE_INTERVAL
 
-var _normal_kills: int = 0
-var _next_elite_at: int = 8
+var _snail_timer: float = SNAIL_INITIAL_DELAY
 
 var _minnow_scene: PackedScene        = preload("res://scenes/Minnow.tscn")
 var _seaweed_scene: PackedScene       = preload("res://scenes/Seaweed.tscn")
@@ -101,13 +101,6 @@ func _on_upgrade_chosen(stat: String, amount: float) -> void:
 	player.apply_upgrade(stat, amount)
 	get_tree().paused = false
 
-func _on_normal_enemy_died(counted: bool) -> void:
-	if not counted:
-		return
-	_normal_kills += 1
-	if _normal_kills >= _next_elite_at:
-		_spawn(_spiked_snail_scene)
-		_next_elite_at += 8
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.keycode == KEY_P and event.pressed and not event.echo:
@@ -117,7 +110,7 @@ func _process(delta: float) -> void:
 	# Scale up spawn rate 1% every 3 seconds
 	_spawn_scale_timer -= delta
 	if _spawn_scale_timer <= 0.0:
-		_minnow_interval = maxf(_minnow_interval * 0.99, 0.5)
+		_minnow_interval = maxf(_minnow_interval * 0.995, 0.5)
 		_spawn_scale_timer = SPAWN_SCALE_INTERVAL
 
 	if not _boss_active:
@@ -125,6 +118,11 @@ func _process(delta: float) -> void:
 		if _minnow_timer <= 0.0:
 			_spawn_minnow()
 			_minnow_timer = _minnow_interval
+
+		_snail_timer -= delta
+		if _snail_timer <= 0.0:
+			_spawn(_spiked_snail_scene)
+			_snail_timer = _minnow_interval * 5.0
 
 	if not _boss_spawned:
 		_boss_timer -= delta
@@ -158,14 +156,11 @@ func _spawn_minnow() -> void:
 	var m := _minnow_scene.instantiate()
 	m.position = sw.get_spawn_position()
 	add_child(m)
-	m.died.connect(_on_normal_enemy_died)
 
 func _spawn(scene: PackedScene) -> void:
 	var instance = scene.instantiate()
 	instance.position = _random_position()
 	add_child(instance)
-	if instance.is_in_group("normal_enemies") and instance.has_signal("died"):
-		instance.died.connect(_on_normal_enemy_died)
 
 func _on_barracuda_died() -> void:
 	_boss_active = false
