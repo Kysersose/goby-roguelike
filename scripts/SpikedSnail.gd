@@ -12,7 +12,7 @@ const SHELL_DURATION: float = 3.0
 const SPIKE_FIRE_INTERVAL: float = 1.5
 const SPIKE_COUNT: int = 8
 
-const PROXIMITY_SHELL_RANGE: float = 240.0
+const PROXIMITY_SHELL_RANGE: float = 480.0
 
 const COLOR_NORMAL: Color = Color(0.5, 0.38, 0.28)
 const COLOR_IMMUNE: Color = Color(0.72, 0.2, 0.9)
@@ -107,6 +107,11 @@ func _shoot_spikes() -> void:
 		spike.direction = dir
 		spike.source = self
 		get_tree().current_scene.add_child(spike)
+
+func hide_in_sand() -> void:
+	var tween := create_tween()
+	tween.tween_property(self, "scale", Vector2.ZERO, 0.8)
+	tween.tween_callback(queue_free)
 
 func apply_knockback(impulse: Vector2) -> void:
 	if _in_shell:

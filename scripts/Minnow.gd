@@ -24,6 +24,8 @@ var _is_dashing: bool = false
 var _knockback_velocity: Vector2 = Vector2.ZERO
 var _knockback_timer: float = 0.0
 var _player: CharacterBody2D = null
+var _fleeing: bool = false
+var _flee_dir: Vector2 = Vector2.ZERO
 var _dmg_num_scene: PackedScene = preload("res://scenes/DamageNumber.tscn")
 
 func _ready() -> void:
@@ -32,7 +34,18 @@ func _ready() -> void:
 	_player = get_tree().get_first_node_in_group("player")
 	_dash_cooldown_timer = 0.0
 
+func flee() -> void:
+	_fleeing = true
+	_flee_dir = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized()
+
 func _physics_process(delta: float) -> void:
+	if _fleeing:
+		velocity = _flee_dir * 500.0
+		move_and_slide()
+		if global_position.length() > 2400.0:
+			queue_free()
+		return
+
 	if _player == null:
 		return
 

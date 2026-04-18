@@ -2,7 +2,7 @@ extends Node2D
 
 const SPAWN_RANGE: float = 450.0
 const MIN_SPAWN_DIST: float = 150.0
-const MINNOW_BASE_INTERVAL: float = 4.5
+const MINNOW_BASE_INTERVAL: float = 5.5
 const SPAWN_SCALE_INTERVAL: float = 3.0
 const BOSS_SPAWN_TIME: float = 300.0
 const SEAWEED_COUNT: int = 10
@@ -30,6 +30,7 @@ var _boss_reward_scene: PackedScene   = preload("res://scenes/BossRewardMenu.tsc
 var _seaweed_nodes: Array = []
 var _boss_timer: float = BOSS_SPAWN_TIME
 var _boss_spawned: bool = false
+var _boss_active: bool = false
 
 func _ready() -> void:
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
@@ -113,16 +114,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		hud.toggle_pause_menu()
 
 func _process(delta: float) -> void:
-	# Scale up spawn rate 3% every 3 seconds
+	# Scale up spawn rate 1% every 3 seconds
 	_spawn_scale_timer -= delta
 	if _spawn_scale_timer <= 0.0:
-		_minnow_interval = maxf(_minnow_interval * 0.98, 0.5)
+		_minnow_interval = maxf(_minnow_interval * 0.99, 0.5)
 		_spawn_scale_timer = SPAWN_SCALE_INTERVAL
 
-	_minnow_timer -= delta
-	if _minnow_timer <= 0.0:
-		_spawn_minnow()
-		_minnow_timer = _minnow_interval
+	if not _boss_active:
+		_minnow_timer -= delta
+		if _minnow_timer <= 0.0:
+			_spawn_minnow()
+			_minnow_timer = _minnow_interval
 
 	if not _boss_spawned:
 		_boss_timer -= delta
@@ -131,10 +133,21 @@ func _process(delta: float) -> void:
 			_spawn_barracuda()
 
 func _spawn_barracuda() -> void:
+	_boss_active = true
+	_dismiss_enemies()
 	var boss := _barracuda_scene.instantiate()
 	boss.position = _random_position()
 	add_child(boss)
 	boss.died.connect(_on_barracuda_died)
+
+func _dismiss_enemies() -> void:
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not is_instance_valid(enemy):
+			continue
+		if enemy.is_in_group("normal_enemies") and enemy.has_method("flee"):
+			enemy.flee()
+		elif enemy.is_in_group("elite_enemies") and enemy.has_method("hide_in_sand"):
+			enemy.hide_in_sand()
 
 func _spawn_minnow() -> void:
 	if _seaweed_nodes.is_empty():
@@ -155,6 +168,7 @@ func _spawn(scene: PackedScene) -> void:
 		instance.died.connect(_on_normal_enemy_died)
 
 func _on_barracuda_died() -> void:
+	_boss_active = false
 	get_tree().paused = true
 	var menu := _boss_reward_scene.instantiate()
 	menu.setup(player)
