@@ -10,6 +10,7 @@ const SEAWEED_COUNT: int = 10
 const SEAWEED_MAP_RANGE: float = 1600.0
 const SEAWEED_MIN_DIST: float = 250.0
 const SEAWEED_SPACING: float = 400.0
+const SNAIL_SPAWN_RADIUS: float = 500.0
 
 @onready var player = $Player
 @onready var hud = $HUD
@@ -121,8 +122,8 @@ func _process(delta: float) -> void:
 
 		_snail_timer -= delta
 		if _snail_timer <= 0.0:
-			_spawn(_spiked_snail_scene)
-			_snail_timer = _minnow_interval * 5.0
+			_spawn_snail()
+			_snail_timer = _minnow_interval * 6.0
 
 	if not _boss_spawned:
 		_boss_timer -= delta
@@ -156,6 +157,18 @@ func _spawn_minnow() -> void:
 	var m := _minnow_scene.instantiate()
 	m.position = sw.get_spawn_position()
 	add_child(m)
+
+func _spawn_snail() -> void:
+	var valid_seaweed := _seaweed_nodes.filter(func(sw): return is_instance_valid(sw))
+	if valid_seaweed.is_empty():
+		_spawn(_spiked_snail_scene)
+		return
+	var sw: Node2D = valid_seaweed[randi() % valid_seaweed.size()]
+	var snail := _spiked_snail_scene.instantiate()
+	var angle := randf() * TAU
+	var dist := randf() * SNAIL_SPAWN_RADIUS
+	snail.position = sw.position + Vector2(cos(angle), sin(angle)) * dist
+	add_child(snail)
 
 func _spawn(scene: PackedScene) -> void:
 	var instance = scene.instantiate()

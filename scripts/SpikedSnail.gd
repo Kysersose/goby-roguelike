@@ -12,8 +12,6 @@ const SHELL_DURATION: float = 3.0
 const SPIKE_FIRE_INTERVAL: float = 1.5
 const SPIKE_COUNT: int = 8
 
-const PROXIMITY_SHELL_RANGE: float = 480.0
-
 const COLOR_NORMAL: Color = Color(0.5, 0.38, 0.28)
 const COLOR_IMMUNE: Color = Color(0.72, 0.2, 0.9)
 
@@ -70,8 +68,7 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 	else:
 		_shell_timer -= delta
-		var dist := global_position.distance_to(_player.global_position)
-		if _shell_timer <= 0.0 and dist <= PROXIMITY_SHELL_RANGE:
+		if _shell_timer <= 0.0:
 			_enter_shell()
 		var dir := (_player.global_position - global_position).normalized()
 		velocity = dir * SPEED
