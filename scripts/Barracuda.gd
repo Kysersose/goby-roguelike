@@ -4,7 +4,7 @@ signal died
 
 enum State { CHASE, RAPID_DASH, CHOMP_WINDUP }
 
-const SPEED: float = 300.0
+const SPEED: float = 175.0
 const RAPID_DASH_SPEED: float = 800.0
 const RAPID_DASH_DURATION: float = 1.0
 const RAPID_DASH_COOLDOWN: float = 10.0
