@@ -3,6 +3,7 @@ extends CharacterBody2D
 const SPEED: float = 60.0
 const DAMAGE: int = 2
 const DAMAGE_COOLDOWN: float = 1.0
+const STOP_DIST: float = 55.0
 
 var max_hp: int = 5
 var hp: int = 5
@@ -17,7 +18,8 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var dir := (_player.global_position - global_position).normalized()
-	velocity = dir * SPEED
+	var dist := global_position.distance_to(_player.global_position)
+	velocity = dir * SPEED if dist > STOP_DIST else Vector2.ZERO
 	move_and_slide()
 
 	_damage_timer -= delta

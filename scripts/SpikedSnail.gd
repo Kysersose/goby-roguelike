@@ -2,7 +2,8 @@ extends CharacterBody2D
 
 signal died
 
-const SPEED: float = 13.3
+const SPEED: float = 18.0
+const STOP_DIST: float = 55.0
 const CONTACT_DAMAGE: int = 6
 const DAMAGE_COOLDOWN: float = 1.0
 const XP_REWARD: int = 25
@@ -71,7 +72,8 @@ func _physics_process(delta: float) -> void:
 		if _shell_timer <= 0.0:
 			_enter_shell()
 		var dir := (_player.global_position - global_position).normalized()
-		velocity = dir * SPEED
+		var dist := global_position.distance_to(_player.global_position)
+		velocity = dir * SPEED if dist > STOP_DIST else Vector2.ZERO
 
 	move_and_slide()
 
@@ -96,8 +98,13 @@ func _exit_shell() -> void:
 	body.color = COLOR_NORMAL
 
 func _shoot_spikes() -> void:
+	if _player == null:
+		return
+	var base_angle := (_player.global_position - global_position).angle()
+	var half_cone := deg_to_rad(32.5)
 	for i in SPIKE_COUNT:
-		var angle := (TAU / SPIKE_COUNT) * i
+		var t := float(i) / float(SPIKE_COUNT - 1)
+		var angle: float = base_angle + lerp(-half_cone, half_cone, t)
 		var dir := Vector2(cos(angle), sin(angle))
 		var spike = _spike_scene.instantiate()
 		spike.global_position = global_position

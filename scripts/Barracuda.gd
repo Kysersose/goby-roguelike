@@ -4,7 +4,8 @@ signal died
 
 enum State { CHASE, RAPID_DASH, CHOMP_WINDUP }
 
-const SPEED: float = 175.0
+const SPEED: float = 145.0
+const STOP_DIST: float = 70.0
 const RAPID_DASH_SPEED: float = 800.0
 const RAPID_DASH_DURATION: float = 1.0
 const RAPID_DASH_COOLDOWN: float = 10.0
@@ -78,10 +79,10 @@ func _physics_process(delta: float) -> void:
 				if _dash_cooldown_timer <= 0.0:
 					_dash_charges = RAPID_DASH_CHARGES
 			var dir := (_player.global_position - global_position).normalized()
-			velocity = dir * SPEED
+			var dist := global_position.distance_to(_player.global_position)
+			velocity = dir * SPEED if dist > STOP_DIST else Vector2.ZERO
 			move_and_slide()
 			_check_chomp_contact()
-			var dist := global_position.distance_to(_player.global_position)
 			if _dash_charges > 0 and _dash_cooldown_timer <= 0.0 and dist <= RAPID_DASH_RANGE:
 				_start_rapid_dash()
 

@@ -11,7 +11,7 @@ signal ability_slot_changed(slot_index: int, ability_name: String)
 const TAIL_WHIP_COOLDOWN: float = 0.5
 const TAIL_WHIP_WIND_UP: float = 0.15
 const TAIL_WHIP_KNOCKBACK: float = 400.0
-const TAIL_WHIP_HITBOX_OFFSET: float = 90.0
+const TAIL_WHIP_HITBOX_OFFSET: float = 80.0
 const TAIL_WHIP_RANGE: float = 150.0
 const HIT_STOP_DURATION: float = 0.05
 const HIT_STOP_SCALE: float = 0.05
@@ -354,44 +354,66 @@ func _tail_whip() -> void:
 func _spawn_tail_whip_vfx(aim_dir: Vector2) -> void:
 	var scene_root := get_tree().current_scene
 	var origin := global_position
+	var impact_point := origin + aim_dir * TAIL_WHIP_HITBOX_OFFSET
 	var base_angle := aim_dir.angle()
-	var light_color := Color(0.55, 0.85, 1.0, 0.75)
-	var dark_color := Color(0.1, 0.3, 0.75, 0.75)
 
+	# Main slash cone — 5 aqua spread lines plus 2 white edge borders.
 	var slash := Node2D.new()
 	slash.position = origin
 	slash.scale = Vector2(0.3, 0.3)
 	scene_root.add_child(slash)
 
-	for _c in 12:
-		var offset_angle := randf_range(-25.0, 25.0)
-		var dist := randf_range(15.0, TAIL_WHIP_RANGE)
-		var cluster_center := Vector2(cos(base_angle + deg_to_rad(offset_angle)), sin(base_angle + deg_to_rad(offset_angle))) * dist
+	var taper := Curve.new()
+	taper.add_point(Vector2(0.0, 1.0))
+	taper.add_point(Vector2(1.0, 1.0 / 5.0))
+	var slash_color := Color(0.2, 0.9, 0.85, 0.9)
+	var border_color := Color(1.0, 1.0, 1.0, 0.5)
 
-		for _p in 9:
-			var pt := cluster_center + Vector2(randf_range(-16.0, 16.0), randf_range(-16.0, 16.0))
-			var dot := Line2D.new()
-			dot.points = PackedVector2Array([pt, pt + Vector2(3.0, 3.0)])
-			dot.width = 3.0
-			dot.default_color = light_color
-			dot.begin_cap_mode = Line2D.LINE_CAP_BOX
-			dot.end_cap_mode = Line2D.LINE_CAP_BOX
-			slash.add_child(dot)
+	for offset_deg in [-60.0, -30.0, 0.0, 30.0, 60.0]:
+		var line := Line2D.new()
+		line.rotation = base_angle + deg_to_rad(offset_deg)
+		line.points = PackedVector2Array([Vector2.ZERO, Vector2(TAIL_WHIP_RANGE, 0.0)])
+		line.width = 5.0
+		line.width_curve = taper
+		line.default_color = slash_color
+		line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		line.end_cap_mode = Line2D.LINE_CAP_ROUND
+		slash.add_child(line)
 
-		for _p in 3:
-			var pt := cluster_center + Vector2(randf_range(-16.0, 16.0), randf_range(-16.0, 16.0))
-			var dot := Line2D.new()
-			dot.points = PackedVector2Array([pt, pt + Vector2(3.0, 3.0)])
-			dot.width = 3.0
-			dot.default_color = dark_color
-			dot.begin_cap_mode = Line2D.LINE_CAP_BOX
-			dot.end_cap_mode = Line2D.LINE_CAP_BOX
-			slash.add_child(dot)
+	for offset_deg in [-60.0, 60.0]:
+		var border := Line2D.new()
+		border.rotation = base_angle + deg_to_rad(offset_deg)
+		border.points = PackedVector2Array([Vector2.ZERO, Vector2(TAIL_WHIP_RANGE, 0.0)])
+		border.width = 2.0
+		border.default_color = border_color
+		border.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		border.end_cap_mode = Line2D.LINE_CAP_ROUND
+		slash.add_child(border)
 
 	var slash_tween := slash.create_tween()
 	slash_tween.tween_property(slash, "scale", Vector2(1.0, 1.0), 0.06)
 	slash_tween.tween_property(slash, "modulate:a", 0.0, 0.12)
 	slash_tween.tween_callback(slash.queue_free)
+
+	# Hit spark — 5 short white lines radiating from the impact point.
+	var burst := Node2D.new()
+	burst.position = impact_point
+	scene_root.add_child(burst)
+
+	var burst_color := Color(1.0, 1.0, 1.0, 0.8)
+	for i in 5:
+		var line := Line2D.new()
+		line.rotation = deg_to_rad(i * 72.0)
+		line.points = PackedVector2Array([Vector2.ZERO, Vector2(18.0, 0.0)])
+		line.width = 3.0
+		line.default_color = burst_color
+		line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		line.end_cap_mode = Line2D.LINE_CAP_ROUND
+		burst.add_child(line)
+
+	var burst_tween := burst.create_tween()
+	burst_tween.tween_property(burst, "modulate:a", 0.0, 0.08)
+	burst_tween.tween_callback(burst.queue_free)
 
 func _resolve_tail_whip() -> void:
 	var hit_any := false

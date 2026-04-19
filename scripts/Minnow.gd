@@ -11,6 +11,7 @@ const DASH_SPEED: float = 300.0
 const DASH_DURATION: float = 0.3
 const DASH_COOLDOWN: float = 5.0
 const DASH_RANGE: float = 147.0
+const STOP_DIST: float = 55.0
 
 var max_hp: float = 5.0
 var hp: float = 5.0
@@ -84,7 +85,7 @@ func _physics_process(delta: float) -> void:
 			_dash_active_timer = DASH_DURATION
 			_dash_cooldown_timer = DASH_COOLDOWN
 		else:
-			velocity = dir * SPEED
+			velocity = dir * SPEED if dist > STOP_DIST else Vector2.ZERO
 
 	move_and_slide()
 
